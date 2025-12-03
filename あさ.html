@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>買取依頼フォーム</title>
+
+<style>
+  body {
+    background: #ffffff;
+    color: #000000;
+    font-family: sans-serif;
+    margin: 0;
+    padding: 20px;
+  }
+
+  #kaitori-form {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 650px;
+    margin: 0 auto;
+    border: 1px solid #e0e0e0;
+  }
+
+  #kaitori-form input,
+  #kaitori-form button {
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #ccc;
+    padding: 8px;
+    width: 100%;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+    border-radius: 5px;
+  }
+
+  #kaitori-form button {
+    background: #000;
+    color: #fff;
+    width: auto;
+    cursor: pointer;
+    padding: 10px 18px;
+  }
+
+  h2, h3 {
+    margin-bottom: 10px;
+  }
+
+  .itemBox {
+    border: 1px solid #ddd;
+    padding: 12px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+  }
+
+  label {
+    font-weight: bold;
+    margin-top: 5px;
+    display: block;
+  }
+</style>
+</head>
+<body>
+
+<div id="kaitori-form">
+  <h2>買取依頼フォーム</h2>
+
+  <label>お客様氏名（漢字フルネーム）</label>
+  <input type="text" id="name">
+
+  <label>受け取り方法</label>
+  <div style="margin-bottom:10px;">
+    <label><input type="radio" name="method" value="郵送"> 郵送</label>
+    <label><input type="radio" name="method" value="持ち込み"> 持ち込み</label>
+  </div>
+
+  <h3>商品リスト</h3>
+  <div id="items"></div>
+
+  <button type="button" onclick="addItem()">＋ 商品を追加</button>
+
+  <h3 style="margin-top:20px;">合計金額：¥<span id="total">0</span></h3>
+
+  <button type="button" onclick="submitForm()">買取依頼を送信</button>
+</div>
+
+
+<script>
+// ------------------------------
+// 初期表示
+// ------------------------------
+document.addEventListener("DOMContentLoaded", function() {
+  addItem();
+});
+
+let itemCount = 0;
+
+// ------------------------------
+// 商品追加
+// ------------------------------
+function addItem() {
+  itemCount++;
+
+  const itemHTML = `
+    <div class="itemBox">
+      <label>商品名</label>
+      <input type="text" class="itemName">
+
+      <label>価格（1個あたり）</label>
+      <input type="number" class="price" value="0" oninput="calcTotal()">
+
+      <label>数量</label>
+      <input type="number" class="qty" value="1" oninput="calcTotal()">
+
+      <p>小計：¥<span class="subtotal">0</span></p>
+    </div>
+  `;
+
+  document.getElementById("items").insertAdjacentHTML("beforeend", itemHTML);
+  calcTotal();
+}
+
+// ------------------------------
+// 合計計算
+// ------------------------------
+function calcTotal() {
+  let total = 0;
+  const items = document.querySelectorAll(".itemBox");
+
+  items.forEach(item => {
+    const price = Number(item.querySelector(".price").value) || 0;
+    const qty = Number(item.querySelector(".qty").value) || 0;
+    const subtotal = price * qty;
+
+    item.querySelector(".subtotal").textContent = subtotal.toLocaleString();
+    total += subtotal;
+  });
+
+  document.getElementById("total").textContent = total.toLocaleString();
+}
+
+// ------------------------------
+// 送信処理（日本語固定版）
+// ------------------------------
+function submitForm() {
+  const name = document.getElementById("name").value;
+  const method = document.querySelector('input[name="method"]:checked')?.value;
+
+  if (!name || !method) {
+    alert("未入力の項目があります");
+    return;
+  }
+
+  const itemList = [];
+  document.querySelectorAll(".itemBox").forEach(item => {
+    itemList.push({
+      itemName: item.querySelector(".itemName").value,
+      price: item.querySelector(".price").value,
+      qty: item.querySelector(".qty").value,
+      subtotal: item.querySelector(".subtotal").textContent
+    });
+  });
+
+  const total = document.getElementById("total").textContent;
+
+  const payload = {
+    lang: "ja",
+    acceptLanguage: "ja",
+    name,
+    method,
+    items: itemList,
+    total
+  };
+
+  fetch("https://rcv.linestep.net/v3/call/2008589893", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept-Language": "ja"
+    },
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    alert("送信しました！（日本語で送信）");
+  })
+  .catch(err => {
+    alert("送信エラー：" + err);
+  });
+}
+</script>
+
+</body>
+</html>
